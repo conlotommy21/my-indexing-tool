@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Instant Indexer Pro</title>
+    <style>
+        body { font-family: system-ui, sans-serif; background: #f4f4f5; padding: 2rem; max-width: 800px; margin: auto; }
+        .card { background: white; padding: 2rem; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        h1 { margin-top: 0; color: #18181b; }
+        label { font-weight: bold; display: block; margin: 1rem 0 0.5rem; }
+        textarea, input { width: 100%; padding: 0.75rem; border: 1px solid #d4d4d8; border-radius: 4px; box-sizing: border-box; font-family: monospace; }
+        button { margin-top: 1.5rem; width: 100%; padding: 1rem; background: #2563eb; color: white; border: none; border-radius: 4px; font-size: 1.1rem; cursor: pointer; font-weight: bold; }
+        button:hover { background: #1d4ed8; }
+        table { width: 100%; border-collapse: collapse; margin-top: 2rem; }
+        th, td { text-align: left; padding: 12px; border-bottom: 1px solid #e4e4e7; }
+        th { background: #f8fafc; }
+        #loader { display: none; text-align: center; margin-top: 1rem; color: #2563eb; font-weight: bold; }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <h1>🚀 Instant Indexer Web App</h1>
+        
+        <label>URLs to Index (One per line)</label>
+        <textarea id="urls" rows="5" placeholder="https://yoursite.com/post-1&#10;https://yoursite.com/post-2"></textarea>
+
+        <label>Google Service Account JSON (For Google)</label>
+        <textarea id="googleKey" rows="4" placeholder='{"type": "service_account", "project_id": "..."}'></textarea>
+
+        <label>Bing / IndexNow API Key (For Bing, Yandex)</label>
+        <input type="text" id="bingKey" placeholder="e.g. 1a2b3c4d5e6f7g8h9i0j">
+
+        <button onclick="submitUrls()">Submit to Search Engines</button>
+        <div id="loader">Processing... This may take a moment.</div>
+
+        <table id="resultsTable" style="display:none;">
+            <thead><tr><th>URL</th><th>Search Engine</th><th>Status</th></tr></thead>
+            <tbody id="resultsBody"></tbody>
+        </table>
+    </div>
+
+    <script>
+        async function submitUrls() {
+            const urls = document.getElementById('urls').value;
+            const googleKey = document.getElementById('googleKey').value;
+            const bingKey = document.getElementById('bingKey').value;
+            const loader = document.getElementById('loader');
+            const table = document.getElementById('resultsTable');
+            const tbody = document.getElementById('resultsBody');
+
+            if(!urls) return alert("Please enter at least one URL.");
+            if(!googleKey && !bingKey) return alert("Please provide at least one API key (Google or Bing).");
+
+            loader.style.display = 'block';
+            table.style.display = 'none';
+            tbody.innerHTML = '';
+
+            try {
+                const response = await fetch('/api/index', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ urls, googleKey, bingKey })
+                });
+                
+                const data = await response.json();
+                
+                data.results.forEach(res => {
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `<td>${res.url}</td><td>${res.engine}</td><td>${res.status}</td>`;
+                    tbody.appendChild(tr);
+                });
+                table.style.display = 'table';
+            } catch (err) {
+                alert("Failed to connect to the server.");
+            } finally {
+                loader.style.display = 'none';
+            }
+        }
+    </script>
+</body>
+</html>
